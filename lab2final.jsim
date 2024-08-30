@@ -6,55 +6,141 @@
 .include "nominal.jsim"
 .include "stdcell.jsim"
 
-* Defining subcircuit with function OUT = ABC + DE + FG using NANDs
+* Item #1
+* Defining subcircuit with function OUT = ABC + DE + FG
 .subckt fx a b c d e f g out1 out2 out3 final
 
-    * Use NANDs for !(ABC)
+    * GETTING "OUT"
+    * STEP 1: DOUBLE NEGATION -> !!(ABC + DE + FG)
+    * STEP 2: DISTRIBUTE NEGATION -> !(!(ABC)·!(DE)·!(FG))
+
+    * STEP 3: Use NANDs for !(ABC)
     Xsub1 a b c out1 nand3
 
-    * Use NANDs for !(DE)
+    * STEP 4: Use NANDs for !(DE)
     Xsub2 d e out2 nand2
 
-    * Use NANDs !(FG)
+    * STEP 5: Use NANDs !(FG)
     Xsub3 f g out3 nand2
 
-    * Use NAND to invert and apply De Morgan's
+    * STEP 6: Use NAND to satisfy !(!(ABC)·!(DE)·!(FG))
     Xsub4 out1 out2 out3 final nand3
 .ends
 
+* Item #2
 * Full-adder subcircuit definition using NANDs
 * sum = a XOR b XOR carryin
 * carryout = AB + A_carryin + B_carryin
+
 .subckt fa a b carry_in out1 out2 out3 out4 out5 out6 out7 out8 out9 out10 sum carry_out
 
-    * Use NANDs to implement XOR gates for sum
+    * GETTING THE SUM
+
+    * STEP 1: A NAND representation of XOR was obtained from https://www.shiksha.com/online-courses/articles/xor-gate-using-nand-gate/
+    * NOTE: This implementation of 2-input XOR gate using NAND gates were cascaded
+    *       in order to implement a 3-input XOR gate using NAND gates 
+
+    * STEP 2: Implement the 2-input XOR for A B, based on the said diagram
     Xsub1 a b out1 nand2
     Xsub2 a out1 out2 nand2
     Xsub3 b out1 out3 nand2
     Xsub4 out2 out3 out4 nand2
 
+    * STEP 3: Implement the 2-input XOR for the output of (A XOR B) and C, based on the said diagram
+    * This will give output the sum which is equal to A XOR B XOR C
     Xsub5 out4 carry_in out5 nand2
     Xsub6 out4 out5 out6 nand2
     Xsub7 carry_in out5 out7 nand2
     Xsub8 out6 out7 sum nand2
 
-    * Use NANDs for !(AB), !(ACin), and !(BCin)
+    * GETTING THE CARRYOUT
+
+    * STEP 1: DOUBLE NEGATION -> !!(A B + B C-IN + A C-IN)
+    * STEP 2: DISTRIBUTE NEGATION -> !(!(AB) · !(B C-IN) · !(A C-IN))
+
+    * STEP 3: Use NANDs for !(AB)
     Xsub9 a b out8 nand2
+
+    * STEP 4: Use NANDs for !(ACin)
     Xsub10 a carry_in out9 nand2
+
+    * STEP 5: Use NANDs for !(BCin)
     Xsub11 b carry_in out10 nand2
 
-    * Use NAND to invert and apply De Morgan's
-    * out8 = !(AB); out9 = !(ACin); out10 = !(BCin)
+    * STEP 6 Use NAND to satisfy !(!(AB) · !(B C-IN) · !(A C-IN))
     Xsub12 out8 out9 out10 carry_out nand3
 .ends
 
-* Instantiate fx
+* Item #1 (OLD VERSION)
+.subckt oldfx 1a 1b 1c 1d 1e 1f 1g draftout1 draftout2 draftout3 draftout4 draftout5 draftfinal
+
+    * Use NANDs for !(ABC)
+    Xsub1 1a 1b draftout1 nand2
+    Xsub2 draftout1 draftout1 draftout2 nand2
+    Xsub3 draftout2 1c draftout3 nand2
+
+    * Use NANDs for !(DE)
+    Xsub4 1d 1e draftout4 nand2
+
+    * Use NANDs !(FG)
+    Xsub5 1f 1g draftout5 nand2
+
+    * Use NAND to invert and apply De Morgan's
+    Xsub6 draftout3 draftout4 draftout6 nand2
+    Xsub7 draftout6 draftout6 draftout7 nand2
+    Xsub8 draftout5 draftout7 draftfinal nand2
+.ends
+
+* Item #2 (OLD VERSION)
+.subckt oldfa a b cin out1 out2 out3 out4 sum carry_out
+
+    * Use XOR for sum
+    Xsub1 a b out1 xor2
+    Xsub2 out1 cin sum xor2
+
+    * Use NANDs for !(AB), !(ACin), and !(BCin) 
+    * Use NANDs for !(!(AB) · !(B C-IN) · !(A C-IN)) which is the carryout
+    Xsub3 a b out2 nand2
+    Xsub4 a cin out3 nand2
+    Xsub5 b cin out4 nand2
+    Xsub12 out2 out3 out4 carry_out nand3
+.ends
+
+* INSTANTIATING THE CIRCUITS
+
+* For Item #1: Instantiate fx
+
+* clk1 - clk7 were used for each input of fx
+* Parameter a is assigned to the output of !(ABC)
+* Parameter b is assigned to the output of !(DE)
+* Parameter c is assigned to the output of !(FG)
+* Parameter out is assigned to the output of OUT = ABC + DE + FG
+
 Xcircuit1 clk1 clk2 clk3 clk4 clk5 clk6 clk7 a b c out fx
 
-* Instantiate fa
+
+* For Item #2: Instantiate fa
+* clk5 - clk7 were used for each input of fa
+* Parameters h, i, j, k were assigned to the intermediate outputs used during the implementation of A XOR B
+* Parameters l, m, n were assigned to the intermediate outputs used during the implementation of (A XOR B) XOR C
+* Parameter o is assigned to the output of !(AB)
+* Parameter p is assigned to the output of !(ACin)
+* Parameter q is assigned to the output of !(BCin)
+* Parameter sum is assigned to the output of A XOR B XOR C (which was implemented using NANDs)
+* Parameter carryout is assigned to the output of !(!(AB) · !(B C-IN) · !(A C-IN))
+
 Xcircuit2 clk5 clk6 clk7 h i j k l m n o p q sum carryout fa
 
-* Plotting    
+* For Item #1 (Previous Version): Instantiate oldfa
+* Parameter oldout is the previous version's "out"
+Xcircuit3 clk1 clk2 clk3 clk4 clk5 clk6 clk7 a1 b1 c1 d1 e1 oldout oldfx
+
+* For Item #2 (Previous Version): Instantiate oldfa
+* Parameter oldsum is the previous version's "sum"
+* Parameter oldcarryout is the previous version's "carryout"
+Xcircuit4 clk5 clk6 clk7 r s t u oldsum oldcarryout oldfa
+
+* PLOTTING    
 .tran 640ns
 .plot clk1
 .plot clk2
@@ -64,5 +150,8 @@ Xcircuit2 clk5 clk6 clk7 h i j k l m n o p q sum carryout fa
 .plot clk6
 .plot clk7
 .plot out
+.plot oldout
 .plot sum
+.plot oldsum
 .plot carryout
+.plot oldcarryout
