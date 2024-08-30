@@ -7,30 +7,25 @@
 .include "stdcell.jsim"
 
 * Defining subcircuit with function OUT = ABC + DE + FG using NANDs
-.subckt fx a b c d e f g out1 out2 out3 out4 out5 out6 out7 final
+.subckt fx a b c d e f g out1 out2 out3 final
 
     * Use NANDs for !(ABC)
-    Xsub1 a b out1 nand2
-    Xsub2 out1 out1 out2 nand2
-    Xsub3 out2 c out3 nand2
+    Xsub1 a b c out1 nand3
 
     * Use NANDs for !(DE)
-    Xsub4 d e out4 nand2
+    Xsub2 d e out2 nand2
 
     * Use NANDs !(FG)
-    Xsub5 f g out5 nand2
+    Xsub3 f g out3 nand2
 
     * Use NAND to invert and apply De Morgan's
-    * out3 = !(ABC); out4 = !(DE); out5 = !(FG)
-    Xsub6 out3 out4 out6 nand2
-    Xsub7 out6 out6 out7 nand2
-    Xsub8 out5 out7 final nand2
+    Xsub4 out1 out2 out3 final nand3
 .ends
 
 * Full-adder subcircuit definition using NANDs
 * sum = a XOR b XOR carryin
 * carryout = AB + A_carryin + B_carryin
-.subckt fa a b carry_in out1 out2 out3 out4 out5 out6 out7 out8 out9 out10 out11 out12 sum carry_out
+.subckt fa a b carry_in out1 out2 out3 out4 out5 out6 out7 out8 out9 out10 sum carry_out
 
     * Use NANDs to implement XOR gates for sum
     Xsub1 a b out1 nand2
@@ -50,16 +45,14 @@
 
     * Use NAND to invert and apply De Morgan's
     * out8 = !(AB); out9 = !(ACin); out10 = !(BCin)
-    Xsub12 out8 out9 out11 nand2
-    Xsub13 out11 out11 out12 nand2
-    Xsub14 out10 out12 carry_out nand2
+    Xsub12 out8 out9 out10 carry_out nand3
 .ends
 
 * Instantiate fx
-Xcircuit1 clk1 clk2 clk3 clk4 clk5 clk6 clk7 a b c d e f g out fx
+Xcircuit1 clk1 clk2 clk3 clk4 clk5 clk6 clk7 a b c out fx
 
 * Instantiate fa
-Xcircuit2 clk5 clk6 clk7 h i j k l m n o p q r s sum carryout fa
+Xcircuit2 clk5 clk6 clk7 h i j k l m n o p q sum carryout fa
 
 * Plotting    
 .tran 640ns
