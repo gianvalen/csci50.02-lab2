@@ -61,7 +61,7 @@ Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
 + 0x00000000 0x00000000 0x55555555 0x55555555 0xFFFFFFFF 0x00000000 0xAAAAAAAA 0xAAAAAAAA 0xFFFFFFFF 0x00000001
 
 * PLOTTING    
-.tran 0.1 200ns
+.tran 200ns
 .plot a[31:0]
 .plot b[31:0]
 .plot sum[31:0]
