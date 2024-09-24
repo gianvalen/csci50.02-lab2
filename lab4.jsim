@@ -60,12 +60,21 @@
 *******************************************************************************
 .subckt counter32 reset a[31:0] f[31:0] clk
 
+  * Add the value of a[31:0] to f[31:0] through a 32-bit adder
+  * Parameter a[31:0] signifies the value being added or subtracted (if negative)
+  * Parameter f[31:0] is the current value being kept after going through the d-register
   Xadd a[31:0] f[31:0] 0 sum[31:0] cout[31:30] add32
 
+  * Connect y[31:0] to 0 or ground
+  * This will be further discussed in the mux2 section
   .connect 0 y[31:0]
 
+  * When reset = 0, the sum of the 32-bit adder also knwon as sum[31:0] will be the value of mux_output[31:0]
+  * When reset = 1, y[31:0] or 0 will be the value of mux_output[31:0]
+  * Parameter mux_output[31:0] will be passed to the d-register
   Xmux reset#32 sum[31:0] y[31:0] mux_output[31:0] mux2
 
+  * In a positive edge-triggered register, mux_output[31:0] will be passed to f[31:0] only when clk is doing a rising transition
   Xdreg mux_output[31:0] clk#32 f[31:0] dreg
 .ends
 
