@@ -1,0 +1,166 @@
+*******************************************************************************
+* Pilar, Paulo Miguel
+* Ramos, Jade Connery
+* Valencia, Gian Carlo
+*******************************************************************************
+
+.include "8clocks.jsim"
+.include "nominal.jsim"
+.include "stdcell.jsim"
+
+*******************************************************************************
+* Defining the full adder and 32-bit ripple-carry adder subcircuits
+*******************************************************************************
+
+* NOTE: Our full adder "heading" was changed from 
+* .subckt fa a b carry_in out1 out2 out3 out4 out5 out6 out7 out8 out9 out10 sum carry_out
+* .subckt fa a b c sum carry
+* The only modification made was to the "heading," while the content remained unchanged
+
+.subckt fa a b c sum carry
+  * GETTING THE SUM
+
+  * STEP 1: A NAND representation of XOR was obtained from https://www.shiksha.com/online-courses/articles/xor-gate-using-nand-gate/
+  * NOTE: This implementation of 2-input XOR gate using NAND gates were cascaded
+  *       in order to implement a 3-input XOR gate using NAND gates 
+
+  * STEP 2: Implement the 2-input XOR for A B, based on the said diagram
+  Xsub1 a b out1 nand2
+  Xsub2 a out1 out2 nand2
+  Xsub3 b out1 out3 nand2
+  Xsub4 out2 out3 out4 nand2
+
+  * STEP 3: Implement the 2-input XOR for the output of (A XOR B) and C, based on the said diagram
+  * This will give output the sum which is equal to A XOR B XOR C
+  Xsub5 out4 c out5 nand2
+  Xsub6 out4 out5 out6 nand2
+  Xsub7 c out5 out7 nand2
+  Xsub8 out6 out7 sum nand2
+
+  * GETTING THE CARRYOUT
+
+  * STEP 1: DOUBLE NEGATION -> !!(A B + B C-IN + A C-IN)
+  * STEP 2: DISTRIBUTE NEGATION -> !(!(AB) · !(B C-IN) · !(A C-IN))
+
+  * STEP 3: Use NANDs for !(AB)
+  Xsub9 a b out8 nand2
+
+  * STEP 4: Use NANDs for !(ACin)
+  Xsub10 a c out9 nand2
+
+  * STEP 5: Use NANDs for !(BCin)
+  Xsub11 b c out10 nand2
+
+  * STEP 6 Use NAND to satisfy !(!(AB) · !(B C-IN) · !(A C-IN))
+  Xsub12 out8 out9 out10 carry nand3
+.ends
+
+.subckt add32 a[31:0] b[31:0] c_in0 sum[31:0] c_out[31:30]
+
+  * The circuit is made in such a way that the carryout of the previous line (bit) will also serve as the value of the current carryin
+  Xbit a[0:31] b[0:31] c_in0 c_out[0:30] sum[0:31] c_out[0:31] fa
+.ends
+
+*******************************************************************************
+* Defining adder/subrtactor subcircuit
+*******************************************************************************
+.subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
+    .connect op0 opr
+    Xinv b[31:0] b_inv[31:0] inverter
+
+    * Use a multiplexer to decide whether the circuit will perform addition or subtraction
+    * If opr = 0, the value of b[31:0] is kept as the circuit is preparing to use addition
+    * If opr = 1, the value of b[31:0] is inverted as the circuit is preparing to use subtraction
+    Xmux opr#32 b[31:0] b_inv[31:0] mux_output[31:0] mux2
+
+    Xas a[31:0] mux_output[31:0] op0 fas[31:0] c_out[31:30] add32
+
+    * Checking for negative
+    * Connect fas[31] to n because fas[31] (the most significant bit) determines whether the output is positive or negative
+    .connect fas[31] n
+
+    * Checking for overflow
+    * If cout[31] != cout[30], then overflow
+    * If cout[31] = cout[30], then no overflow
+    Xoverflow c_out[31] c_out[30] v xor2
+
+    * Checking for zero
+    * Using the "Pushing Bubbles" technique, OR gates were implemented using NOR and NAND
+    Xnor_start fas[0:7] fas[8:15] fas[16:23] fas[24:31] nor_out[0:7] nor4
+    Xnand1 nor_out0 nor_out1 nor_out2 nor_out3 nand_out1 nand4
+    Xnand2 nor_out4 nor_out5 nor_out6 nor_out7 nand_out2 nand4
+    Xnor_end nand_out1 nand_out2 z nor2
+.ends
+
+*******************************************************************************
+* Defining comparator subcircuit
+*******************************************************************************
+.subckt cmp32 n v z op[2:1] fcmp[31:0]
+    .connect 0 fcmp[1:31]
+
+    * Check if A = B
+    Xcheck_equal z op1 a_equal_b and2
+
+    * Check if A < B
+    Xcheck_less1 v n is_negative xor2
+    Xcheck_less2 op2 is_negative a_less_b and2
+
+    * Check if A <= B
+    Xcheck_both a_equal_b a_less_b a_less_equal_b or2
+
+    * Use a multiplexer to select the appropriate output for fcmp0 based on the requested comparator operation
+    * If op2 = 0 and op1 = 0, fcmp0 does not matter
+    * If op2 = 1 and op1 = 0, fcmp0 checks if A is less than B
+    * If op2 = 0 and op1 = 1, fcmp0 checks if A is equal to B
+    * If op2 = 1 and op1 = 1, fcmp0 checks if A is less than or equal to B
+    Xmux4 op2 op1 fcmp0 a_less_b a_equal_b a_less_equal_b fcmp0 mux4
+.ends
+
+***************************************************************************
+* Instantiating both subcircuits together.
+*************************************************************************** 
+
+* Set zero = 0
+* Set one = 1
+Xcons0 zero constant0
+Xcons1 one constant1
+
+* If op0 = zero, add
+* If op0 = one, subtract
+Xas a[31:0] b[31:0] one fas[31:0] n v z as32
+
+* If op2 = zero, op1 = zero, it does not matter
+* If op2 = zero, op1 = one, check if a = b
+* If op2 = one, op1 = zero, check if a < b
+* If op2 = one, op1 = one, check if a <= b
+Xcmp n v z one one fcmp[31:0] cmp32
+
+* * All Test Cases (Slide 1)
+* Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 0 0x55555555 0 0x55555555 -1 0 0 0xAAAAAAAA 0 0xAAAAAAAA 1 -1 0x80000000 -1
+* Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 0 0 0x55555555 0x55555555 -1 0 -1 0 0xAAAAAAAA 0xAAAAAAAA -1 1 0x80000000 -1
+
+* * Test Cases that use the "+" operation (Slide 1)
+* Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 0 0x55555555 0 0x55555555 -1 0xAAAAAAAA 0 0xAAAAAAAA 1 -1 0x80000000 
+* Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 0 0 0x55555555 0x55555555 -1 0 0xAAAAAAAA 0xAAAAAAAA -1 1 0x80000000 
+
+* * Test Cases that use the "-" operation (Slide 1)
+* Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 0 0 -1
+* Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 0 -1 -1
+
+* All Test Cases (Slide 2)
+Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
++ 2 0x80000000 3 0x7FFFFFFF 3
+Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
++ -3 2 5 -2 3
+
+.tran 280ns
+.plot sd(a[31:0])
+.plot sd(b[31:0])
+.plot sd(fas[31:0])
+.plot sd(fcmp[31:0])
