@@ -65,7 +65,11 @@
 * Defining adder/subrtactor subcircuit
 *******************************************************************************
 .subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
+    
+    * Connect op0 to opr to determine which operation will be used
     .connect op0 opr
+
+    * Invert the value of b to prepare, in case the operation is subtraction
     Xinv b[31:0] b_inv[31:0] inverter
 
     * Use a multiplexer to decide whether the circuit will perform addition or subtraction
@@ -73,6 +77,7 @@
     * If opr = 1, the value of b[31:0] is inverted as the circuit is preparing to use subtraction
     Xmux opr#32 b[31:0] b_inv[31:0] mux_output[31:0] mux2
 
+    * Perform the appropriate operation using the 32-bit adder circuit
     Xas a[31:0] mux_output[31:0] op0 fas[31:0] c_out[31:30] add32
 
     * Checking for negative
@@ -135,11 +140,11 @@ Xas a[31:0] b[31:0] one fas[31:0] n v z as32
 * If op2 = one, op1 = one, check if a <= b
 Xcmp n v z one one fcmp[31:0] cmp32
 
-* * All Test Cases (Slide 1)
-* Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
-* + 0 0x55555555 0 0x55555555 -1 0 0 0xAAAAAAAA 0 0xAAAAAAAA 1 -1 0x80000000 -1
-* Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
-* + 0 0 0x55555555 0x55555555 -1 0 -1 0 0xAAAAAAAA 0xAAAAAAAA -1 1 0x80000000 -1
+* All Test Cases (Slide 1)
+Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
++ 0 0x55555555 0 0x55555555 -1 0 0 0xAAAAAAAA 0 0xAAAAAAAA 1 -1 0x80000000 -1
+Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
++ 0 0 0x55555555 0x55555555 -1 0 -1 0 0xAAAAAAAA 0xAAAAAAAA -1 1 0x80000000 -1
 
 * * Test Cases that use the "+" operation (Slide 1)
 * Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
@@ -153,11 +158,11 @@ Xcmp n v z one one fcmp[31:0] cmp32
 * Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
 * + 0 -1 -1
 
-* All Test Cases (Slide 2)
-Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
-+ 2 0x80000000 3 0x7FFFFFFF 3
-Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
-+ -3 2 5 -2 3
+* * All Test Cases (Slide 2)
+* Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + 2 0x80000000 3 0x7FFFFFFF 3
+* Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
+* + -3 2 5 -2 3
 
 .tran 280ns
 .plot sd(a[31:0])
