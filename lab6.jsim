@@ -1,0 +1,210 @@
+*******************************************************************************
+* Pilar, Paulo Miguel
+* Ramos, Jade Connery
+* Valencia, Gian Carlo
+*******************************************************************************
+
+.include "8clocks.jsim"
+.include "nominal.jsim"
+.include "stdcell.jsim"
+
+*******************************************************************************
+* Defining the full adder and 32-bit ripple-carry adder subcircuits
+*******************************************************************************
+
+* NOTE: Our full adder "heading" was changed from:
+* .subckt fa a b carry_in out1 out2 out3 out4 out5 out6 out7 out8 out9 out10 sum carry_out
+* and modified it to:
+* .subckt fa a b c sum carry
+* The only modification made was to the "heading," and the comments (which now includes the tpd of the gates) while the content remained unchanged
+
+.subckt fa a b c sum carry
+  * GETTING THE SUM
+  * tpd = 0.24ns (based on quickref)
+
+  * STEP 1: A NAND representation of XOR was obtained from https://www.shiksha.com/online-courses/articles/xor-gate-using-nand-gate/
+  * NOTE: This implementation of 2-input XOR gate using NAND gates were cascaded
+  *       in order to implement a 3-input XOR gate using NAND gates 
+
+  * STEP 2: Implement the 2-input XOR for A B, based on the said diagram
+  Xsub1 a b out1 nand2
+  Xsub2 a out1 out2 nand2
+  Xsub3 b out1 out3 nand2
+  Xsub4 out2 out3 out4 nand2
+
+  * STEP 3: Implement the 2-input XOR for the output of (A XOR B) and C, based on the said diagram
+  * This will give output the sum which is equal to A XOR B XOR C
+  Xsub5 out4 c out5 nand2
+  Xsub6 out4 out5 out6 nand2
+  Xsub7 c out5 out7 nand2
+  Xsub8 out6 out7 sum nand2
+
+  * GETTING THE CARRYOUT
+  * tpd = 0.14ns (based on quickref)
+
+  * STEP 1: DOUBLE NEGATION -> !!(A B + B C-IN + A C-IN)
+  * STEP 2: DISTRIBUTE NEGATION -> !(!(AB) · !(B C-IN) · !(A C-IN))
+
+  * STEP 3: Use NANDs for !(AB)
+  Xsub9 a b out8 nand2
+
+  * STEP 4: Use NANDs for !(ACin)
+  Xsub10 a c out9 nand2
+
+  * STEP 5: Use NANDs for !(BCin)
+  Xsub11 b c out10 nand2
+
+  * STEP 6 Use NAND to satisfy !(!(AB) · !(B C-IN) · !(A C-IN))
+  Xsub12 out8 out9 out10 carry nand3
+.ends
+
+.subckt add32 a[31:0] b[31:0] c_in0 sum[31:0] c_out[31:30]
+
+  * The circuit is made in such a way that the carryout of the previous line (bit) will also serve as the value of the current carryin
+  * tpd = 0.24 * 32 = 7.68ns (based on quickref)
+  Xbit a[0:31] b[0:31] c_in0 c_out[0:30] sum[0:31] c_out[0:31] fa
+.ends
+
+*******************************************************************************
+* Defining adder/subrtactor subcircuit
+*******************************************************************************
+.subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
+
+    * Invert the value of b to prepare, in case the operation is subtraction
+    * tpd = 0.02ns (based on quickref). The tpd was not multiplied by 32 because all 32 gates were on the same level.
+    Xinv b[31:0] b_inv[31:0] inverter
+
+    * Use a multiplexer to decide whether the circuit will perform addition or subtraction
+    * tpd = 0.12ns (based on quickref). The tpd was not multiplied by 32 because all 32 gates were on the same level.
+    * If op0 = 0, the value of b[31:0] is kept as the circuit is preparing to use addition
+    * If op0 = 1, the value of b[31:0] takes in the value of b_inv[31:0] as preparation for subtraction
+    Xmux op0#32 b[31:0] b_inv[31:0] mux_output[31:0] mux2
+
+    * Perform the appropriate operation using the 32-bit adder circuit
+    * tpd = 7.68ns (based on quickref)
+    * op0 is set as the initial carry-in
+    * If op0 = 0, the initial carry-in is 0
+    * If op0 = 1, the initial carry-in is 1 signifying the "1" added in two's complement
+    Xas a[31:0] mux_output[31:0] op0 fas[31:0] c_out[31:30] add32
+
+    * Checking for negative
+    * Connect fas31 to n because fas31 (the most significant bit) determines whether the output is positive or negative
+    .connect fas31 n
+
+    * Checking for overflow
+    * tpd = 0.14ns (based on quickref)
+    * If cout31 != cout30, then overflow
+    * If cout31 = cout30, then no overflow
+    Xoverflow c_out31 c_out30 v xor2
+
+    * Checking for zero
+    * tpd = 0.24ns (based on quickref)
+    * Using the "Pushing Bubbles" technique, OR gates were implemented using NOR and NAND
+    Xnor_start fas[0:7] fas[8:15] fas[16:23] fas[24:31] nor_out[0:7] nor4
+    Xnand1 nor_out0 nor_out1 nor_out2 nor_out3 nand_out1 nand4
+    Xnand2 nor_out4 nor_out5 nor_out6 nor_out7 nand_out2 nand4
+    Xnor_end nand_out1 nand_out2 z nor2
+.ends
+
+*******************************************************************************
+* Defining comparator subcircuit
+*******************************************************************************
+.subckt cmp32 n v z op[2:1] fcmp[31:0]
+    
+    * Connect fcmp[1:31] to ground
+    .connect 0 fcmp[1:31]
+
+    * Check if A = B
+    * Connect z to a_equal_b
+    .connect z a_equal_b
+
+    * Check if A < B
+    * tpd = 0.26ns (based on quickref)
+    Xcheck_less1 v n is_negative xor2
+    Xcheck_less2 op2 is_negative a_less_b and2
+
+    * Check if A <= B
+    * tpd = 0.15ns (based on quickref)
+    Xcheck_both a_equal_b a_less_b a_less_equal_b or2
+
+    * Use a multiplexer to select the appropriate output for fcmp0 based on the requested comparator operation
+    * tpd = 0.19ns (based on quickref)
+    * If op2 = 0 and op1 = 0, "0" is passed to fcmp0. However, it does not matter as it does not mean anything. ("DONTCARE")
+    * If op2 = 1 and op1 = 0, fcmp0 checks if A is less than B
+    * If op2 = 0 and op1 = 1, fcmp0 checks if A is equal to B
+    * If op2 = 1 and op1 = 1, fcmp0 checks if A is less than or equal to B
+    Xmux4 op2 op1 0 a_less_b a_equal_b a_less_equal_b fcmp0 mux4
+.ends
+
+*******************************************************************************
+* Defining bitwise boolean subcircuit
+*******************************************************************************
+.subckt bool32 a[31:0] b[31:0] op[3:0] fbool[31:0]
+
+    * op[0:3] are the same for all multiplexers
+    Xmux a[31:0] b[31:0] op0#32 op1#32 op2#32 op3#32 fbool[31:0] mux4
+.ends
+
+*******************************************************************************
+* Defining bit shifter subcircuit
+*******************************************************************************
+.subckt shift32 a[31:0] b[4:0] op[1:0] fshift[31:0]
+    .connect 0 gd
+
+    Xlshift_sixteen b4#32 a[31:0] a[15:0] gd#16 lshift_sixteen[31:0] mux2
+    Xlshift_eight b3#32 lshift_sixteen[31:0] lshift_sixteen[23:0] gd#8 lshift_eight[31:0] mux2
+    Xlshift_four b2#32 lshift_eight[31:0] lshift_eight[27:0] gd#4 lshift_four[31:0] mux2
+    Xlshift_two b1#32 lshift_four[31:0] lshift_four[29:0] gd#2 lshift_two[31:0] mux2
+    Xlshift_one b0#32 lshift_two[31:0] lshift_two[30:0] gd lshift_one[31:0] mux2
+
+    Xcheck_sign op1 a31 sign and2
+
+    Xrshift_sixteen b4#32 a[31:0] sign#16 a[31:16] rshift_sixteen[31:0] mux2
+    Xrshift_eight b3#32 rshift_sixteen[31:0] sign#8 rshift_sixteen[31:8] rshift_eight[31:0] mux2
+    Xrshift_four b2#32 rshift_eight[31:0] sign#4 rshift_eight[31:4] rshift_four[31:0] mux2
+    Xrshift_two b1#32 rshift_four[31:0] sign#2 rshift_four[31:2] rshift_two[31:0] mux2
+    Xrshift_one b0#32 rshift_two[31:0] sign rshift_two[31:1] rshift_one[31:0] mux2
+
+    Xmux2 op0#32 lshift_one[31:0] rshift_one[31:0] fshift[31:0] mux2
+.ends
+*******************************************************************************
+* Defining ALU subcircuit
+*******************************************************************************
+.subckt alu32 a[31:0] b[31:0] alufn[5:0] f[31:0]
+
+    Xadder a[31:0] b[31:0] alufn0 as_output[31:0] n v z as32
+
+    Xshifter a[31:0] b[4:0] alufn[1:0] shifter_output[31:0] shift32
+
+    Xbool a[31:0] b[31:0] alufn[3:0] bool_output[31:0] bool32
+
+    Xcomparator n v z alufn[2:1] cmp_output[31:0] cmp32
+
+    Xselect alufn5#32 alufn4#32 as_output[31:0] shifter_output[31:0] bool_output[31:0] cmp_output[31:0] f[31:0] mux4
+.ends
+***************************************************************************
+* Instantiating the ALU subcircuit
+*************************************************************************** 
+Xalu a[31:0] b[31:0] alufn[5:0] f[31:0] alu32
+
+Wa a[31:0] nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
++ -1 0x55555555 0xAAAAAAAA 1 -2 -1 -1 0x55555555 0 -1 0x55555555 0
++ -1 0x55555555 0 -1 0x55555555 0 -1 0x55555555 0 1 -1 -1 0x55555555 0xAAAAAAAA -1
++ 0x55555555 0xAAAAAAAA -1 -1 15 0 -1 15 0 -1 15 0
+
+Wb b[31:0] nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
++ 1 0x55555555 0xAAAAAAAA 1 0 -1 -1 0xAAAAAAAA 0 -1 0xAAAAAAAA 0
++ -1 0xAAAAAAAA 0 -1 0xAAAAAAAA 0 -1 0xAAAAAAAA 0 31 15 0 24 24 31
++ 24 24 31 1 15 -256 1 15 -256 1 15 -256
+
+Wf alufn[5:0] nrz(0v,5.0v,60ns,0ns,.1ns,.1ns)
++ 0 1 24 30 22 26 21 32 33 35 51 53 55
+
+.tran 780ns
+.plot sd(a[31:0])
+.plot sd(b[31:0])
+.plot sd(f[31:0])
+.plot b(f[31:0])
+.plot b(alufn[5:0])
+.plot b(a[31:0])
+.plot b(b[31:0])
