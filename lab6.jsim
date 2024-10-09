@@ -62,20 +62,23 @@
 
     * Invert the value of b to prepare, in case the operation is subtraction
     * tpd = 0.02ns (based on quickref). The tpd was not multiplied by 32 because all 32 gates were on the same level.
-    Xinv b[31:0] b_inv[31:0] inverter
+    * Xinv b[31:0] b_inv[31:0] inverter
 
     * Use a multiplexer to decide whether the circuit will perform addition or subtraction
     * tpd = 0.12ns (based on quickref). The tpd was not multiplied by 32 because all 32 gates were on the same level.
     * If op0 = 0, the value of b[31:0] is kept as the circuit is preparing to use addition
     * If op0 = 1, the value of b[31:0] takes in the value of b_inv[31:0] as preparation for subtraction
-    Xmux op0#32 b[31:0] b_inv[31:0] mux_output[31:0] mux2
+    * Xmux op0#32 b[31:0] b_inv[31:0] mux_output[31:0] mux2
+
+    * NEW FOR LAB6
+    Xinvert b[31:0] op0#32 b_new[31:0] xor2
 
     * Perform the appropriate operation using the 32-bit adder circuit
     * tpd = 7.68ns (based on quickref)
     * op0 is set as the initial carry-in
     * If op0 = 0, the initial carry-in is 0
     * If op0 = 1, the initial carry-in is 1 signifying the "1" added in two's complement
-    Xas a[31:0] mux_output[31:0] op0 fas[31:0] c_out[31:30] add32
+    Xas a[31:0] b_new[31:0] op0 fas[31:0] c_out[31:30] add32
 
     * Checking for negative
     * Connect fas31 to n because fas31 (the most significant bit) determines whether the output is positive or negative
