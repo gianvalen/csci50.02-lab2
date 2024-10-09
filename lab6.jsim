@@ -158,9 +158,9 @@
     * Xmux2 op0#32 lshift_one[31:0] rshift_one[31:0] fshift[31:0] mux2
 
     Xcheck_sign op1 a31 sign and2
-    Xdirection op0#32 a[0:31] a[31:0] reversed_or_not[31:0] mux2
+    Xdirection op0#32 a[0:31] a[31:0] right_or_left[31:0] mux2
     
-    Xshift_sixteen b4#32 a[31:0] sign#16 a[31:16] shift_sixteen[31:0] mux2
+    Xshift_sixteen b4#32 right_or_lef[31:0] sign#16 a[31:16] shift_sixteen[31:0] mux2
     Xshift_eight b3#32 shift_sixteen[31:0] sign#8 shift_sixteen[31:8] shift_eight[31:0] mux2
     Xshift_four b2#32 shift_eight[31:0] sign#4 shift_eight[31:4] shift_four[31:0] mux2
     Xshift_two b1#32 shift_four[31:0] sign#2 shift_four[31:2] shift_two[31:0] mux2
