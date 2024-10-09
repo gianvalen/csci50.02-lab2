@@ -23,11 +23,11 @@
   * GETTING THE SUM
 
   * STEP 1: Implement the 2-input XOR for A and B
-  Xsub1 a b out1 xor2
+    Xsub1 a b out1 xor2
 
   * STEP 2: Implement the 2-input XOR for the output of (A XOR B) and C
   * This will give output the sum which is equal to A XOR B XOR C
-  Xsub2 out1 c sum xor2
+    Xsub2 out1 c sum xor2
 
   * GETTING THE CARRYOUT
   * tpd = 0.14ns (based on quickref)
@@ -36,16 +36,21 @@
   * STEP 2: DISTRIBUTE NEGATION -> !(!(AB) · !(B C-IN) · !(A C-IN))
 
   * STEP 3: Use NANDs for !(AB)
-  Xsub9 a b out8 nand2
+  * Xsub9 a b out8 nand2
 
   * STEP 4: Use NANDs for !(ACin)
-  Xsub10 a c out9 nand2
+  * Xsub10 a c out9 nand2
 
   * STEP 5: Use NANDs for !(BCin)
-  Xsub11 b c out10 nand2
+  * Xsub11 b c out10 nand2
 
   * STEP 6 Use NAND to satisfy !(!(AB) · !(B C-IN) · !(A C-IN))
-  Xsub12 out8 out9 out10 carry nand3
+  * Xsub12 out8 out9 out10 carry nand3
+
+    * NEW FOR LAB6
+    Xsub3 out1 c out2 and2
+    Xsub4 a b out3 and2
+    Xsub5 out2 out3 carry or2
 .ends
 
 .subckt add32 a[31:0] b[31:0] c_in0 sum[31:0] c_out[31:30]
@@ -113,8 +118,11 @@
 
     * Check if A < B
     * tpd = 0.26ns (based on quickref)
-    Xcheck_less1 v n is_negative xor2
-    Xcheck_less2 op2 is_negative a_less_b and2
+    * Xcheck_less1 v n is_negative xor2
+    * Xcheck_less2 op2 is_negative a_less_b and2
+
+    * NEW FOR LAB6
+    Xcheck_less v n a_less_b xor2
 
     * Check if A <= B
     * tpd = 0.15ns (based on quickref)
@@ -208,8 +216,8 @@ Wf alufn[5:0] nrz(0v,5.0v,60ns,0ns,.1ns,.1ns)
 .tran 780ns
 .plot sd(a[31:0])
 .plot sd(b[31:0])
+.plot b(a[31:0])
+.plot b(b[31:0])
 .plot sd(f[31:0])
 .plot b(f[31:0])
 .plot b(alufn[5:0])
-.plot b(a[31:0])
-.plot b(b[31:0])
