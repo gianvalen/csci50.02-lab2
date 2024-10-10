@@ -9,73 +9,61 @@
 .include "stdcell.jsim"
 
 *******************************************************************************
-* Defining the full adder and 32-bit ripple-carry adder subcircuits
+* Defining the full adder subcircuit
 *******************************************************************************
 
-* NOTE: Our full adder "heading" was changed from:
-* .subckt fa a b carry_in out1 out2 out3 out4 out5 out6 out7 out8 out9 out10 sum carry_out
-* and modified it to:
-* .subckt fa a b c sum carry
-* The only modification made was to the "heading," and the comments (which now includes the tpd of the gates) while the content remained unchanged
-
-* Lab 6 NOTE: The full adder circuit was mofified to use 2-input XORs instead for NAND gates in getting the sum
+* Lab 6 Note/s (full adder)
+* The full adder circuit was modified to use fewer gates in order to reduce the number of gates and their overall size.
+* To calculate the sum, 2-input XOR gates were used instead of NAND gates.
+* To calculate the carry, the circuit utilized 2 AND gates and 1 OR gate, also incorporating the A XOR B obtained during the sum computation.
 .subckt fa a b c sum carry
-  * GETTING THE SUM
+    
+    * GETTING THE SUM
 
-  * STEP 1: Implement the 2-input XOR for A and B
+    * STEP 1: Implement a 2-input XOR gate for A and B
     Xsub1 a b out1 xor2
 
-  * STEP 2: Implement the 2-input XOR for the output of (A XOR B) and C
-  * This will give output the sum which is equal to A XOR B XOR C
+    * STEP 2: Implement a 2-input XOR gate for the output of (A XOR B) and C
+    * This will give output the sum which is equal to A XOR B XOR C
     Xsub2 out1 c sum xor2
 
-  * GETTING THE CARRYOUT
-  * tpd = 0.14ns (based on quickref)
+    * GETTING THE CARRYOUT
 
-  * STEP 1: DOUBLE NEGATION -> !!(A B + B C-IN + A C-IN)
-  * STEP 2: DISTRIBUTE NEGATION -> !(!(AB) · !(B C-IN) · !(A C-IN))
-
-  * STEP 3: Use NANDs for !(AB)
-  * Xsub9 a b out8 nand2
-
-  * STEP 4: Use NANDs for !(ACin)
-  * Xsub10 a c out9 nand2
-
-  * STEP 5: Use NANDs for !(BCin)
-  * Xsub11 b c out10 nand2
-
-  * STEP 6 Use NAND to satisfy !(!(AB) · !(B C-IN) · !(A C-IN))
-  * Xsub12 out8 out9 out10 carry nand3
-
-    * NEW FOR LAB6
+    * STEP 1: Implement a 2-input AND gate to get (A XOR B)C
     Xsub3 out1 c out2 and2
+
+    * STEP 2: Implement a 2-input AND gate to get AB
     Xsub4 a b out3 and2
+
+    * STEP 2: Implement a 2-input OR gate to get (A XOR B)C + AB which is the carry
     Xsub5 out2 out3 carry or2
 .ends
 
+*******************************************************************************
+* Defining 32-bit ripple-carry adder subcircuit
+*******************************************************************************
+
+* Lab 6 Note/s (32-bit ripple-carry adder)
+* No changes were made.
 .subckt add32 a[31:0] b[31:0] c_in0 sum[31:0] c_out[31:30]
 
-  * The circuit is made in such a way that the carryout of the previous line (bit) will also serve as the value of the current carryin
-  * tpd = 0.24 * 32 = 7.68ns (based on quickref)
-  Xbit a[0:31] b[0:31] c_in0 c_out[0:30] sum[0:31] c_out[0:31] fa
+    * The circuit is made in such a way that the carryout of the previous line (bit) will also serve as the value of the current carryin
+    * tpd = 0.24 * 32 = 7.68ns (based on quickref)
+    Xbit a[0:31] b[0:31] c_in0 c_out[0:30] sum[0:31] c_out[0:31] fa
 .ends
 
 *******************************************************************************
 * Defining adder/subrtactor subcircuit
 *******************************************************************************
+
+* Lab 6 Note/s (adder/subrtactor)
+* Previously, 32 inverters were used to get the inverted values of b[31:0], as preparation for subtraction
+* Additionally, 32 multiplexers were used to determine whether the circuit would perform addition or subtraction.
+* In this lab, both functions were streamlined using 32 XOR gates, which now handle both inversion and selection.
 .subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
 
-    * Invert the value of b to prepare, in case the operation is subtraction
-    * tpd = 0.02ns (based on quickref). The tpd was not multiplied by 32 because all 32 gates were on the same level.
-    * Xinv b[31:0] b_inv[31:0] inverter
-
-    * Use a multiplexer to decide whether the circuit will perform addition or subtraction
-    * tpd = 0.12ns (based on quickref). The tpd was not multiplied by 32 because all 32 gates were on the same level.
-    * If op0 = 0, the value of b[31:0] is kept as the circuit is preparing to use addition
-    * If op0 = 1, the value of b[31:0] takes in the value of b_inv[31:0] as preparation for subtraction
-    * Xmux op0#32 b[31:0] b_inv[31:0] mux_output[31:0] mux2
-
-    * NEW FOR LAB6
+    * If op0 = 0, the value of b[31:0] is kept in b_new[31:0] as the circuit is preparing to use addition
+    * If op0 = 1, the value of b_new[31:0] takes in the value of an inverted b[31:0] as preparation for subtraction
     Xinvert b[31:0] op0#32 b_new[31:0] xor2
 
     * Perform the appropriate operation using the 32-bit adder circuit
@@ -107,6 +95,9 @@
 *******************************************************************************
 * Defining comparator subcircuit
 *******************************************************************************
+
+* Lab 6 Note/s (comparator)
+* The additional AND gate with inputs 'op2' and 'is_negative' for calculating 'a_less_b' has been removed, as it was deemed redundant.
 .subckt cmp32 n v z op[2:1] fcmp[31:0]
     
     * Connect fcmp[1:31] to ground
@@ -117,11 +108,6 @@
     .connect z a_equal_b
 
     * Check if A < B
-    * tpd = 0.26ns (based on quickref)
-    * Xcheck_less1 v n is_negative xor2
-    * Xcheck_less2 op2 is_negative a_less_b and2
-
-    * NEW FOR LAB6
     Xcheck_less v n a_less_b xor2
 
     * Check if A <= B
@@ -140,61 +126,95 @@
 *******************************************************************************
 * Defining bitwise boolean subcircuit
 *******************************************************************************
+
 .subckt bool32 a[31:0] b[31:0] op[3:0] fbool[31:0]
 
     * op[0:3] are the same for all multiplexers
+    * If op[3:0] = 1000, the subcircuit is configured to perform a bitwise boolean AND operation.
+    * If op[3:0] = 1110, the subcircuit is configured to perform a bitwise boolean OR operation.
+    * If op[3:0] = 0110, the subcircuit is configured to perform a bitwise boolean XOR operation.
+    * If op[3:0] = 0101, the subcircuit is configured to perform a bitwise boolean NOT A operation.
     Xmux a[31:0] b[31:0] op0#32 op1#32 op2#32 op3#32 fbool[31:0] mux4
 .ends
 
 *******************************************************************************
 * Defining bit shifter subcircuit
 *******************************************************************************
+
 .subckt shift32 a[31:0] b[4:0] op[1:0] fshift[31:0]
-    * .connect 0 gd
 
-    * Xlshift_sixteen b4#32 a[31:0] a[15:0] gd#16 lshift_sixteen[31:0] mux2
-    * Xlshift_eight b3#32 lshift_sixteen[31:0] lshift_sixteen[23:0] gd#8 lshift_eight[31:0] mux2
-    * Xlshift_four b2#32 lshift_eight[31:0] lshift_eight[27:0] gd#4 lshift_four[31:0] mux2
-    * Xlshift_two b1#32 lshift_four[31:0] lshift_four[29:0] gd#2 lshift_two[31:0] mux2
-    * Xlshift_one b0#32 lshift_two[31:0] lshift_two[30:0] gd lshift_one[31:0] mux2
-
-    * Xcheck_sign op1 a31 sign and2
-
-    * Xrshift_sixteen b4#32 a[31:0] sign#16 a[31:16] rshift_sixteen[31:0] mux2
-    * Xrshift_eight b3#32 rshift_sixteen[31:0] sign#8 rshift_sixteen[31:8] rshift_eight[31:0] mux2
-    * Xrshift_four b2#32 rshift_eight[31:0] sign#4 rshift_eight[31:4] rshift_four[31:0] mux2
-    * Xrshift_two b1#32 rshift_four[31:0] sign#2 rshift_four[31:2] rshift_two[31:0] mux2
-    * Xrshift_one b0#32 rshift_two[31:0] sign rshift_two[31:1] rshift_one[31:0] mux2
-
-    * Xmux2 op0#32 lshift_one[31:0] rshift_one[31:0] fshift[31:0] mux2
-
+    * Determine the sign of the a[31:0] by performing an AND with op1 and a31
+    * If op1 = 0, the circuit is perfoming a logical shift, hence the value that will take the place of the shifted bits is automatically 0
+    * If op1 = 1, the circuit is perfoming an arithmetic shift, hence the value that will take the place of the shifted bits depends on the sign
     Xcheck_sign op1 a31 sign and2
+
+    * Determine the direction of the shifting, specifying whether it is a right or left shift
+    * If op0 = 0, then a left shift will be occuring. a[31:0] is flipped to a[0:31]
+    * This flip is necessary because flipping the value allows a right shift to effectively function as a left shift when it is flipped back
+    * If op0 = 0, then a right shift will be occuring, and no flipping will happen
     Xdirection op0#32 a[0:31] a[31:0] right_or_left[31:0] mux2
     
+    * If b4 = 0, then a shift by 16 bits will not occur
+    * If b4 = 1, a shift by 16 bits will be performed, 
+    * adding the 'sign' or placeholder obtained earlier 16 times to the beginning to simulate the shift
+    * The output from this stage is then cascaded to the next 'shifter' as input
     Xshift_sixteen b4#32 right_or_left[31:0] sign#16 a[31:16] shift_sixteen[31:0] mux2
+
+    * If b3 = 0, then a shift by 8 bits will not occur
+    * If b3 = 1, a shift by 8 bits will be performed, 
+    * adding the 'sign' or placeholder obtained earlier 8 times to the beginning to simulate the shift
+    * The output from this stage is then cascaded to the next 'shifter' as input
     Xshift_eight b3#32 shift_sixteen[31:0] sign#8 shift_sixteen[31:8] shift_eight[31:0] mux2
+
+    * If b2 = 0, then a shift by 4 bits will not occur
+    * If b2 = 1, a shift by 4 bits will be performed, 
+    * adding the 'sign' or placeholder obtained earlier 4 times to the beginning to simulate the shift
+    * The output from this stage is then cascaded to the next 'shifter' as input
     Xshift_four b2#32 shift_eight[31:0] sign#4 shift_eight[31:4] shift_four[31:0] mux2
+
+    * If b1 = 0, then a shift by 2 bits will not occur
+    * If b1 = 1, a shift by 2 bits will be performed, 
+    * adding the 'sign' or placeholder obtained earlier 2 times to the beginning to simulate the shift
+    * The output from this stage is then cascaded to the next 'shifter' as input
     Xshift_two b1#32 shift_four[31:0] sign#2 shift_four[31:2] shift_two[31:0] mux2
+
+    * If b0 = 0, then a shift by 1 bit will not occur
+    * If b0 = 1, a shift by 1 bit will be performed, 
+    * adding the 'sign' or placeholder obtained earlier 1 time to the beginning to simulate the shift
     Xshift_one b0#32 shift_two[31:0] sign shift_two[31:1] shift_one[31:0] mux2
 
+    * Determine if the shifted output should be flipped, depending on op0
+    * If op0 = 0, then the output will be flipped to overall simulate a left shift
+    * If op0 = 1, then the output will not be flipped to overall simulate a right shift
     Xmux op0#32 shift_one[0:31] shift_one[31:0] fshift[31:0] mux2
-   
 .ends
+
 *******************************************************************************
 * Defining ALU subcircuit
 *******************************************************************************
 .subckt alu32 a[31:0] b[31:0] alufn[5:0] f[31:0]
 
+    * Instantiate a 32-bit adder/subtractor, producing an output labeled as_output[31:0]
+    * alufn0 determines whether an addition or subtraction is performed
     Xadder a[31:0] b[31:0] alufn0 as_output[31:0] n v z as32
 
+    * Instantiate a shifter, producing an output labeled shifter_output[31:0]
+    * alufn[1:0] determines whether a logical left shift, a logical right shift, or an arithmetic right shift is performed
+    * b[4:0] determines the number of bits by which the shifting will occur
     Xshifter a[31:0] b[4:0] alufn[1:0] shifter_output[31:0] shift32
 
+    * Instantiate a bitwise boolean circuit, producing an output labeled bool_output[31:0]
+    * alufn[3:0] determines whether a bitwise AND, a bitwise OR, bitwise XOR, or a bitwise NOT A is performed
     Xbool a[31:0] b[31:0] alufn[3:0] bool_output[31:0] bool32
 
+    * Instantiate a comparator, producing an output labeled cmp_output[31:0]
+    * alufn[2:1] determines whether an 'a = b', an 'a < b', or an 'a <= b' is performed
     Xcomparator n v z alufn[2:1] cmp_output[31:0] cmp32
 
+    * Based on alufn[5:4], determine which output to select: the 32-bit adder/subtractor's, shifter's, bitwise boolean's, or comparator's
     Xselect alufn5#32 alufn4#32 as_output[31:0] shifter_output[31:0] bool_output[31:0] cmp_output[31:0] f[31:0] mux4
 .ends
+
 ***************************************************************************
 * Instantiating the ALU subcircuit
 *************************************************************************** 
