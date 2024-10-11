@@ -151,14 +151,14 @@
     * Determine the direction of the shifting, specifying whether it is a right or left shift
     * If op0 = 0, then a left shift will be occuring. a[31:0] is flipped to a[0:31]
     * This flip is necessary because flipping the value allows a right shift to effectively function as a left shift when it is flipped back
-    * If op0 = 0, then a right shift will be occuring, and no flipping will happen
+    * If op0 = 1, then a right shift will be occuring, and no flipping will happen
     Xdirection op0#32 a[0:31] a[31:0] right_or_left[31:0] mux2
     
     * If b4 = 0, then a shift by 16 bits will not occur
     * If b4 = 1, a shift by 16 bits will be performed, 
     * adding the 'sign' or placeholder obtained earlier 16 times to the beginning to simulate the shift
     * The output from this stage is then cascaded to the next 'shifter' as input
-    Xshift_sixteen b4#32 right_or_left[31:0] sign#16 a[31:16] shift_sixteen[31:0] mux2
+    Xshift_sixteen b4#32 right_or_left[31:0] sign#16 right_or_left[31:16] shift_sixteen[31:0] mux2
 
     * If b3 = 0, then a shift by 8 bits will not occur
     * If b3 = 1, a shift by 8 bits will be performed, 
@@ -241,3 +241,6 @@ Wf alufn[5:0] nrz(0v,5.0v,60ns,0ns,.1ns,.1ns)
 .plot sd(f[31:0])
 .plot b(f[31:0])
 .plot b(alufn[5:0])
+.plot a[31:0]
+.plot b[31:0]
+.plot f[31:0]
