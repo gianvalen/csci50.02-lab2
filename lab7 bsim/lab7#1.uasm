@@ -1,0 +1,39 @@
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+| Pilar, Paulo Miguel
+| Ramos, Jade Connery
+| Valencia, Gian Carlo
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+| Lab 7 Problem #1
+
+.include beta.uasm
+
+        LD(r31, DATA, r0)   | r0 = r31 + DATA               (r0 counts the number of elements in the array that are to be checked)
+
+LOOP:   ADDC(r1, 4, r1)     | r1 = r1 + 4                   (r1 serves as the counter for the array)
+        LD(r1, DATA, r2)    | r2 = DATA + r1                (r2 contains a specific element in the array, based on r1)
+        SHRC(r2, 1, r3)     | r3 = r2 >> 1                  (Shift the element in r2 to the right by 1)
+        SHLC(r3, 1, r3)     | r3 = r3 << 1                  (Shift back to the left by 1)
+        SUB(r2,r3,r3)       | r3 = r2 - r3                  (Check if the element in r2 is odd or even through subtraction)
+                            |                               (If the difference is 0, then even)
+                            |                               (If the difference is 1, then odd)
+        SUBC(r0, 1, r0)     | r0 = r0 - 1                   (Signify that an element in the array has been checked)
+        BEQ(r3, ADD)        | Branch to ADD if r3 = 0       (If r3 = 0, then the element in r2 is even)
+        BEQ(r0, STORE)      | Branch to STORE if r0 = 0     (Once r0 = 0, then all elements of the array has been checked)
+        BNE(r0, LOOP)       | Branch to LOOP if r0 != 0     (If r0 != 0, then there are still elements to be checked, hence loop again)
+
+ADD:    ADD(r4, r2, r4)     | r4 = r2 + r4                  
+        BNE(r0, LOOP)       | Branch to LOOP if r0 != 0     (If r0 != 0, then there are still elements to be checked)
+   
+STORE:  ADDC(r1, 4, r1)     | r1 = r1 + 4                   (Determine the address after array by adding 4 to r1)
+                            |                               (By the time the loop is done, r1 can access the address of the last element)
+        ST(r4, DATA, r1)    | DATA + r1 = r4                (Store the result right after the array)
+        HALT()              | Finish execution
+
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+DATA:   LONG(5)             | <-- length of the array
+        LONG(3)             | <-- first element of the array
+        LONG(-5)
+        LONG(12)
+        LONG(-14)
+        LONG(1)             | <-- last element of the array

@@ -1,0 +1,33 @@
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+| Pilar, Paulo Miguel
+| Ramos, Jade Connery
+| Valencia, Gian Carlo
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+| Lab 7 Problem #2
+
+.include beta.uasm          
+    
+        LD(r31,DATA,r0)         | r0 = DATA + r3            (r0 counts the number of elements in the array)
+        ADDC(r1,4,r1)           | r1 = r1 + 4               (r1 will be used to point at the address of first item in the array)
+        MULC(r0,4,r2)           | r2 = r0 * 4               (r2 will be used to point at the address of last item in the array)
+        SHRC(r0,1,r0)           | r0 = r0 >> 1              (Divide array length by 2, serving as a counter)
+
+LOOP:   LD(r1,DATA,r3)          | r3 = r1 + DATA            (r3 gets loaded with data from address r1)
+        LD(r2,DATA,r4)          | r4 = r2 + DATA            (r4 gets loaded with data from address r2)
+        ST(r3,DATA,r2)          | DATA + r2 = r3            (Data from address [DATA + r2] gets stored to r3)
+        ST(r4,DATA,r1)          | DATA + r1 = r4            (Data from address [DATA + r1] gets stored to r4)
+                                |                           (This just switches the data pointed at "front/start" of the array and data pointed at the "tail/end")
+        ADDC(r1,4,r1)           | r1 = r1 + 4               (Move r1 to the next element at the "front/start" of the array)
+        SUBC(r2,4,r2)           | r2 = r2 - 4               (Move r2 to the next element at the "tail/end" of the array)
+        SUBC(r0,1,r0)           | r0 = r0 - 1               (Decrement counter r0)
+        BNE(r0,LOOP)            | Branch to LOOP if r0 !=0  (If r0 != 0, then there are still elements to be checked)
+        HALT()                  | Finish execution
+
+|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+DATA:   LONG(5)                 | <-- length of the array
+        LONG(3)                 | <-- first element of the array
+        LONG(-5)
+        LONG(12)
+        LONG(-14)
+        LONG(1)                 | <-- last element of the array
