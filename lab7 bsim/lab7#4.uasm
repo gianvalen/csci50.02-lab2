@@ -9,27 +9,27 @@
 .include beta.uasm
 
         | If N = 0
-        LD(r31,DATA,r0)     | r0 = r31 + DATA               (r0 gets loaded by the number of terms (N) to be written)
-        LD(r31,X,r2)        | r2 = r31 + X                  (r2 gets loaded with 0, the first term)
-        LD(r31,Y,r3)        | r3 = r31 + Y                  (r3 gets loaded with 0, the first term)
+        LD(r31,DATA,r0)     | r0 = memory[r31 + DATA]       (r0 gets loaded by the number of terms (N) to be written)
+        LD(r31,X,r2)        | r2 = memory[r31 + X]                  (r2 gets loaded with 0, the first term)
+        LD(r31,Y,r3)        | r3 = memory[r31 + Y]                  (r3 gets loaded with 0, the first term)
         BEQ(r0, END)        | Branch to END if r0 = 0       (If N = 0, then proceed to END and finish execution)
 
         | If N = 1           
         ADDC(r1, 4, r1)     | r1 = r1 + 4                   (r1 will be used to access the address where the next term will be written)
-        ST(r2, DATA, r1)    | r1 + DATA = r4                (Store the first term)
+        ST(r2, DATA, r1)    | memory[r1 + DATA] = r4        (Store the first term)
         SUBC(r0, 1, r0)     | r0 = r0 - 1                   (Decrement from counter r0)
         BEQ(r0, END)        | Branch to END if r0 = 0       (If N = 0, then proceed to END and finish execution)
 
         | If N = 2
         ADDC(r1, 4, r1)     | r1 = r1 + 4                   (r1 will be used to access the address where the next term will be written)
-        ST(r3, DATA, r1)    | r4 + DATA = r1                (Store the second term)
+        ST(r3, DATA, r1)    | memory[r4 + DATA] = r1        (Store the second term)
         SUBC(r0, 1, r0)     | r0 = r0 - 1                   (Decrement from counter r0)
 
         | If N > 2
 LOOP:   BEQ(r0, END)        | Branch to END if r0 = 0       (If N = 0, then proceed to END and finish execution)
         ADDC(r1, 4, r1)     | r1 = r1 + 4                   (r1 will be used to access the address where the next term will be written)
         ADD(r2,r3,r4)       | r4 = r2 + r3                  (Determine the next term n by adding n-1 and n-2)
-        ST(r4, DATA, r1)    | r4 + DATA = r1                (Store the next term)
+        ST(r4, DATA, r1)    | memory[r4 + DATA] = r1        (Store the next term)
         SUBC(r0, 1, r0)     | r0 = r0 + 1                   (Decrement from counter r0)
         ADDC(r3,0,r2)       | r2 = r3 + 0                   (n-1 term becomes n-2 term)
         ADDC(r4,0,r3)       | r3 = r4 + 0                   (n term becomes n-1 term)
