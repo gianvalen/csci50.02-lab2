@@ -8,20 +8,20 @@
 
 .include beta.uasm          
     
-        LD(r31,DATA,r0)         | r0 = memory[DATA + r3]    (r0 counts the number of elements in the array)
-        ADDC(r1,4,r1)           | r1 = r1 + 4               (r1 will be used to point at the address of first item in the array)
-        MULC(r0,4,r2)           | r2 = r0 * 4               (r2 will be used to point at the address of last item in the array)
-        SHRC(r0,1,r0)           | r0 = r0 >> 1              (Divide array length by 2, serving as a counter)
+        LD(r31, DATA, r0)       | r0 = memory[DATA + r31]   (r0 counts the number of elements in the array)
+        ADDC(r1, 4, r1)         | r1 = r1 + 4               (r1 will be used to point at the address of first item in the array)
+        MULC(r0, 4, r2)         | r2 = r0 * 4               (r2 will be used to point at the address of last item in the array)
+        SHRC(r0, 1, r0)         | r0 = r0 >> 1              (Divide array length by 2, serving as a counter)
 
-LOOP:   LD(r1,DATA,r3)          | r3 = memory[r1 + DATA]    (r3 gets loaded with data from address r1)
-        LD(r2,DATA,r4)          | r4 = memory[r2 + DATA]    (r4 gets loaded with data from address r2)
-        ST(r3,DATA,r2)          | memory[DATA + r2] = r3    (Data from address [DATA + r2] gets stored to r3)
-        ST(r4,DATA,r1)          | memory[DATA + r1] = r4    (Data from address [DATA + r1] gets stored to r4)
+LOOP:   LD(r1, DATA, r3)        | r3 = memory[r1 + DATA]    (r3 gets loaded with data from address r1)
+        LD(r2, DATA, r4)        | r4 = memory[r2 + DATA]    (r4 gets loaded with data from address r2)
+        ST(r3, DATA, r2)        | memory[DATA + r2] = r3    (Data from address [DATA + r2] gets stored to r3)
+        ST(r4, DATA, r1)        | memory[DATA + r1] = r4    (Data from address [DATA + r1] gets stored to r4)
                                 |                           (This just switches the data pointed at "front/start" of the array and data pointed at the "tail/end")
-        ADDC(r1,4,r1)           | r1 = r1 + 4               (Move r1 to the next element at the "front/start" of the array)
-        SUBC(r2,4,r2)           | r2 = r2 - 4               (Move r2 to the next element at the "tail/end" of the array)
-        SUBC(r0,1,r0)           | r0 = r0 - 1               (Decrement counter r0)
-        BNE(r0,LOOP)            | Branch to LOOP if r0 !=0  (If r0 != 0, then there are still elements to be checked)
+        ADDC(r1, 4, r1)         | r1 = r1 + 4               (Move r1 to the next element at the "front/start" of the array)
+        SUBC(r2, 4, r2)         | r2 = r2 - 4               (Move r2 to the next element at the "tail/end" of the array)
+        SUBC(r0, 1, r0)         | r0 = r0 - 1               (Decrement counter r0)
+        BNE(r0, LOOP)           | Branch to LOOP if r0 !=0  (If r0 != 0, then there are still elements to be checked)
         HALT()                  | Finish execution
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

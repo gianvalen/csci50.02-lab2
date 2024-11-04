@@ -8,17 +8,17 @@
 
 .include beta.uasm
 
-        LD(r31,DATA,r0)     | r0 = memory[r31 + DATA]   (r0 gets loaded with the 32-bit key)
-        ADDC(r1,4,r1)       | r1 = r1 + 4               (r1 will be used to point to the address of plain text's length)
-        LD(r1,DATA,r1)      | r1 = memory[r1 + DATA]    (r1 gets loaded with the address of plain text's length, serving as a counter)
-        ADDC(r2,4,r2)       | r2 = r2 + 4               (Initially add 4 to r2 so that it can be used to point to the plain text's address later)
+        LD(r31, DATA, r0)   | r0 = memory[r31 + DATA]   (r0 gets loaded with the 32-bit key)
+        ADDC(r1, 4, r1)     | r1 = r1 + 4               (r1 will be used to point to the address of plain text's length)
+        LD(r1, DATA, r1)    | r1 = memory[r1 + DATA]    (r1 gets loaded with the address of plain text's length, serving as a counter)
+        ADDC(r2, 4, r2)     | r2 = r2 + 4               (Initially add 4 to r2 so that it can be used to point to the plain text's address later)
     
-LOOP:   ADDC(r2,4,r2)       | r2 = r2 + 4               (Access the address of the first/next element)
-        LD(r2,DATA,r3)      | r3 = memory[r2 + DATA]    (r3 gets loaded with the address of the current element)
-        XOR(r0,r3,r4)       | r4 = r0 XOR r3            (XOR the element with the key then put the result to r4)  
-        ST(r4,DATA,r2)      | memory[DATA + r2] = r4    (Store encrypted data r4 by overwriting DATA + r2)
-        SUBC(r1,1,r1)       | r1 = r1 - 1               (Decrement counter r1)
-        BNE(r1,LOOP)        | Branch to LOOP if r1 != 0 (If there are still elements to be encrypted, then go back to LOOP)
+LOOP:   ADDC(r2, 4, r2)     | r2 = r2 + 4               (Access the address of the first/next element)
+        LD(r2, DATA, r3)    | r3 = memory[r2 + DATA]    (r3 gets loaded with the address of the current element)
+        XOR(r0, r3, r4)     | r4 = r0 XOR r3            (XOR the element with the key then put the result to r4)  
+        ST(r4, DATA, r2)    | memory[DATA + r2] = r4    (Store encrypted data r4 by overwriting DATA + r2)
+        SUBC(r1, 1, r1)     | r1 = r1 - 1               (Decrement counter r1)
+        BNE(r1, LOOP)       | Branch to LOOP if r1 != 0 (If there are still elements to be encrypted, then go back to LOOP)
         HALT()              | Finish execution
                     
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

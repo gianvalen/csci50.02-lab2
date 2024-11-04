@@ -14,7 +14,7 @@ LOOP:   ADDC(r1, 4, r1)     | r1 = r1 + 4                   (r1 serves as the co
         LD(r1, DATA, r2)    | r2 = memory[DATA + r1]        (r2 contains a specific element in the array, based on r1)
         SHRC(r2, 1, r3)     | r3 = r2 >> 1                  (Shift the element in r2 to the right by 1)
         SHLC(r3, 1, r3)     | r3 = r3 << 1                  (Shift back to the left by 1)
-        SUB(r2,r3,r3)       | r3 = r2 - r3                  (Check if the element in r2 is odd or even through subtraction)
+        SUB(r2, r3, r3)     | r3 = r2 - r3                  (Check if the element in r2 is odd or even through subtraction)
                             |                               (If the difference is 0, then even)
                             |                               (If the difference is 1, then odd)
         SUBC(r0, 1, r0)     | r0 = r0 - 1                   (Signify that an element in the array has been checked)
@@ -27,7 +27,7 @@ ADD:    ADD(r4, r2, r4)     | r4 = r2 + r4                  (r4 keeps track of t
    
 STORE:  ADDC(r1, 4, r1)     | r1 = r1 + 4                   (Determine the address after array by adding 4 to r1)
                             |                               (By the time the loop is done, r1 can access the address of the last element)
-        ST(r4, DATA, r1)    | memory[DATA + r1] = r4                (Store the result right after the array)
+        ST(r4, DATA, r1)    | memory[DATA + r1] = r4        (Store the result right after the array)
         HALT()              | Finish execution
 
 |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
