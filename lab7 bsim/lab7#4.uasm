@@ -10,8 +10,8 @@
 
         | If N = 0
         LD(r31,DATA,r0)     | r0 = memory[r31 + DATA]       (r0 gets loaded by the number of terms (N) to be written)
-        LD(r31,X,r2)        | r2 = memory[r31 + X]                  (r2 gets loaded with 0, the first term)
-        LD(r31,Y,r3)        | r3 = memory[r31 + Y]                  (r3 gets loaded with 0, the first term)
+        LD(r31,X,r2)        | r2 = memory[r31 + X]          (r2 gets loaded with 0, the first term)
+        LD(r31,Y,r3)        | r3 = memory[r31 + Y]          (r3 gets loaded with 0, the first term)
         BEQ(r0, END)        | Branch to END if r0 = 0       (If N = 0, then proceed to END and finish execution)
 
         | If N = 1           
