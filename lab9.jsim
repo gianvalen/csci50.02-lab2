@@ -420,7 +420,6 @@ Xbranchtarget2 0#23 pc[8:0] 0#29 vdd 0#3 pcplusfour[31:0] c_out[1:0] add32
 * This is essentially <PC> + 4 + 4C
 Xbranchtarget3 pcplusfour[31:0] shifttwo[31:0] 0 branchtarget[31:0] c_out[3:2] add32
 
-
 *******************************************************************************
 * Instruction Memory to Register File
 *******************************************************************************
